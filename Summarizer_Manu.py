@@ -1,7 +1,8 @@
 from tkinter import Tk
 from tkinter.filedialog import askopenfilename
 from tkinter import *
-import os
+# from tkPDFViewer import tkPDFViewer as pdf
+import pathlib, os
 import spacy
 from spacy.lang.en.stop_words import STOP_WORDS
 from string import punctuation
@@ -18,6 +19,7 @@ from io import BufferedReader
 import tkinter.ttk as ttk
 from tktooltip import ToolTip
 import webbrowser
+import PyPDF2
 
 Word2TextFile = ""
 text=""
@@ -35,18 +37,8 @@ class MainApplication(Frame):
         Frame.__init__(self, parent, *args, **kwargs)
         self.parent = parent
 
-    # def choose_file(): #Choosing the PDF file
-    #     Tk().withdraw() # we don't want a full GUI, so keep the root window from appearing
-    #     global filename
-    #     filename = askopenfilename(filetypes=[('pdf file', '*.pdf'),("word Document", '*.doc'),("word Document", '*.docx')] ) # show an "Open" dialog box and return the path to the selected file
-    #     if (len(filename) == 0):
-    #         quit()
-    #     else:
-    #         # Entry Field to show the chosen file path
-    #         mbox.showinfo(message="File Path is : '" + str(filename)+ "'")
-
     def choose_already_txt(): #Choosing the PDF file
-        Tk().withdraw() # we don't want a full GUI, so keep the root window from appearing
+        Tk().withdraw()
         global txtAlreadyDir
         txtAlreadyDir = askopenfilename(filetypes=[('txt file', '*.txt'), ('all files', '*.*')]) # show an "Open" dialog box and return the path to the selected file
         if (len(txtAlreadyDir) == 0):
@@ -80,7 +72,7 @@ class MainApplication(Frame):
 
     def pdfTotext(): #Convert PDF to Text
 
-        Tk().withdraw() # we don't want a full GUI, so keep the root window from appearing
+        Tk().withdraw()
         global filename
         filename = askopenfilename(filetypes=[('pdf file', '*.pdf')] ) # show an "Open" dialog box and return the path to the selected file
         if (len(filename) == 0):
@@ -106,11 +98,9 @@ class MainApplication(Frame):
         else:
             with open(PDF2TextFile.name, 'wt', encoding="utf-8") as text_file:
                 print(pdftext, file=text_file)
-                # doc.save("Word2TxtOutput.txt")
                 PDF2TextFile.close()
         mbox.showinfo(message= "File has been saved in Path: '"+ str(PDF2TextFile))
         global fullPdfPath
-        # fullPdfPath=str(saveDir)+'/GUITextfrompdf.txt'
         fullPdfPath = PDF2TextFile
 
 
@@ -119,8 +109,14 @@ class MainApplication(Frame):
         languageis = ""
         global language
         languageis = language.get()
-        language_label = Label(window, text="You have chosen "+str(languageis), font=('Comic Sans MS', 9, 'italic'), fg='#ff006e', bg="#00072d", wraplength=200, justify="center")
-        language_label.place(x=630, y=270)
+        mbox.showinfo(message= "You have chosen "+str(languageis))
+
+    def select_percentage():
+        global perc
+        perc=""
+        global percent
+        perc=percent.get()
+        mbox.showinfo(message= "You have chosen "+str(perc))
     
     def clearAfterOneRun():
         global text
@@ -139,6 +135,10 @@ class MainApplication(Frame):
         languageis = ""
         global Word2TextFile
         Word2TextFile = ""
+        global percent
+        percent = ""
+        global perc
+        perc=""
         mbox.showinfo(message= "Cleared everything, now you can start over")
 
 
@@ -152,39 +152,40 @@ class MainApplication(Frame):
             text = Word2TextFile
         else:
             text = txtAlreadyDir
-        per=0.5
+        per=(int(perc))/100
+        print(per)
         if languageis == 'Russian':
             nlp = spacy.load('ru_core_news_lg')
         else:
             nlp = spacy.load('en_core_web_trf')
         if languageis =='Russian':
                 if txtAlreadyDir !="":
-                        with open(text, encoding='utf-8', mode = "r") as te: #problem here with decoding Windows-1251
+                        with open(text, encoding='utf-8', mode = "r") as te:
                             print("Russian Loop: "+str(te))
                             article = te.read()
-                            print(article)
+                            # print(article)
                 else:
-                        with open(text.name, encoding='utf-8', mode = "r") as te: #problem here with decoding Windows-1251
+                        with open(text.name, encoding='utf-8', mode = "r") as te:
                             print("Russian Loop: "+str(te))
                             article = te.read()
-                            print(article)
+                            # print(article)
         else:
                 if txtAlreadyDir !="":
-                    with open(text, encoding='utf-8', mode = "r") as te: #problem here with decoding Windows-1251
+                    with open(text, encoding='utf-8', mode = "r") as te:
                         print("Russian Loop: "+str(te))
                         article = te.read()
-                        print(article)
+                        # print(article)
                 else:
                         if text == str:
-                            with open(text, encoding='utf-8', mode = "r") as te: #problem here with decoding Windows-1251
+                            with open(text, encoding='utf-8', mode = "r") as te:
                                 print("Russian Loop: "+str(te))
                                 article = te.read()
-                                print(article)
+                                # print(article)
                         else:
-                            with open(text.name, encoding='utf-8', mode = "r") as te: #problem here with decoding Windows-1251
+                            with open(text.name, encoding='utf-8', mode = "r") as te:
                                 print("Russian Loop: "+str(te))
                                 article = te.read()
-                                print(article)
+                                # print(article)
         doc= nlp(article)
         tokens=[token.text for token in doc]
         word_frequencies={}
@@ -199,6 +200,7 @@ class MainApplication(Frame):
         for word in word_frequencies.keys():
             word_frequencies[word]=word_frequencies[word]/max_frequency
         sentence_tokens= [sent for sent in doc.sents]
+        print(len(sentence_tokens))
         sentence_scores = {}
         for sent in sentence_tokens:
             for word in sent:
@@ -220,14 +222,10 @@ class MainApplication(Frame):
             window.destroy()
 
     def save():
-            # function to call when user press
-            # the save button, a filedialog will
-            # open and ask to save file
         file = asksaveasfile(mode = 'wb', title="Select Location", filetypes=[('txt file', '*.txt')])
         if file is None:
             return
         else:
-            # with open(file, 'w', encoding="utf-8") as f:
                 file.write(summary_file.encode('utf-8'))
                 file.close()
 
@@ -249,8 +247,22 @@ class MainApplication(Frame):
                                 "\n"
                                 "Also Check out my GitHub")
 
+    def helpDoc():
+        helpWindow = customtkinter.CTk()
+        # customtkinter.CTkFrame(window)
+        HelpPDFDir = os.fspath(pathlib.Path(__file__).parent / 'Help.pdf')
+        HelpPDFFile = PyPDF2.PdfReader(HelpPDFDir)
+        Helppages = HelpPDFFile.pages[0]
+        HelpPDFtext= Helppages.extract_text()
+        helptextbox = customtkinter.CTkTextbox(helpWindow, width=1000, height=600, scrollbar_button_color=("#ff006e","#ff006e"))
+        helptextbox.grid(row=0, column=0)
+        helptextbox.insert("0.0", HelpPDFtext)  # insert at line 0 character 0
+        helptextbox.configure(state="disabled")  # configure textbox to be read-only
+        helptextbox.pack()
+        helpWindow.mainloop()
+
+
 if __name__ == "__main__":
-    # window=Tk()
     window=customtkinter.CTk()
     #Adding a funny icon
     scriptdirname = os.path.dirname(__file__)
@@ -274,6 +286,7 @@ if __name__ == "__main__":
 
     aboutMenu = Menu(menubar, tearoff=0)
     aboutMenu.add_command(label="About this app", command=MainApplication.aboutInfo)
+    aboutMenu.add_command(label="Help", command=MainApplication.helpDoc)
     menubar.add_cascade(label="About", menu=aboutMenu)
 
     menubar.config(bg="#00072d")
@@ -283,106 +296,82 @@ if __name__ == "__main__":
     customtkinter.set_default_color_theme("blue")
     window.configure(fg_color=("#00072d","#00072d"))
     canvas=Canvas()
-    # window.mainloop()
-
-    # Label
-    # lbl=Label(window, text="---This part is dedicated to convert your files to text file (.txt)---", fg='#ff006e', bg="#00072d", font=("Comic Sans MS", 10, "italic"))
-    # lbl.place(x=200, y=10)
-
-    # Button for choosing file
     filename=""
-    # file_btn=customtkinter.CTkButton(master= window, text="1. Choose PDF Document", fg_color=("#3d405b","#3d405b"), bg_color=("#00072d","#00072d"), command=MainApplication.choose_file, corner_radius=10)
-    # file_btn.place(x=110, y=60)
-
-    # ToolTip(file_btn, msg="Click here to select your PDF file")
-
-    # Button to start pdf to text conversion
-    # convert_btn=customtkinter.CTkButton(window, text="2. Convert PDF to Text", fg_color=("#3d405b","#3d405b"), bg_color=("#00072d","#00072d"), command=MainApplication.pdfTotext, corner_radius=10)
-    # convert_btn.place(x=110, y=100)
-
-    # ToolTip(convert_btn, msg="Click here to start converting your PDF to txt file")
-
-    # # Button to start Word to text Conversion
-    # convertWord_btn=customtkinter.CTkButton(window, text="2. Convert Word to Text", fg_color=("#3d405b","#3d405b"), bg_color=("#00072d","#00072d"), command=MainApplication.wordtoText, corner_radius=10)
-    # convertWord_btn.place(x=410, y=60)
-
-    # ToolTip(convertWord_btn, msg="Click here to start converting your Word Document (.Doc and .Docx) to text file")
-
-    # # already_have_txt=""
-    # btn_selecttextfile = customtkinter.CTkButton(window, text="2. Select text file",fg_color=("#3d405b","#3d405b"), bg_color=("#00072d","#00072d"), command=MainApplication.choose_already_txt, corner_radius=10) #Choosing the pre-existing txt file
-    # btn_selecttextfile.place(x=410, y=100)
-
-    # ToolTip(btn_selecttextfile, msg="Click here to Select the text file if you already have it and there is no need to convert your file to text")
-
     options = ["Russian", "Enlish"]
 
     language = customtkinter.StringVar(value=options[0])
-    # language.set(options[0]) # default value
 
     # Label
     lbl=Label(window, text="--- The following part is dedicated to summarizing your text ---", fg='#ff006e', bg="#00072d",  font=('Comic Sans MS', 10, 'italic'),wraplength=600, justify="center")
-    lbl.place(x=200, y=160)
+    lbl.place(x=200, y=60)
 
     # Label
     lbl=Label(window, text=" Please select the text language", fg='#ff006e', bg="#00072d",  font=('Comic Sans MS', 10, 'italic'),wraplength=300, justify="center")
-    lbl.place(x=410, y=220)
+    lbl.place(x=350, y=100)
 
     lang_options = customtkinter.CTkComboBox(master= window, variable=language, values=options, button_hover_color=("#3f37c9","#3f37c9"), dropdown_hover_color=("#3f37c9","#3f37c9"), fg_color=("#3d405b","#3d405b"), bg_color=("#00072d","#00072d") )
-    # lang_options.config(fg="#3d405b")
-    lang_options.place(x=410, y=250)
+    lang_options.place(x=340, y=130)
 
-    btn_language = customtkinter.CTkButton(master= window, text=" I'm happy with this language", fg_color=("#3d405b","#3d405b"), bg_color=("#00072d","#00072d"), command=MainApplication.select_language, corner_radius=10)
-    btn_language.place(x=410, y=290)
-
+    btn_language = customtkinter.CTkButton(master= window, text="✔️", width=30,
+                                 fg_color=("#3d405b","#3d405b"), bg_color=("#00072d","#00072d"), command=MainApplication.select_language, corner_radius=10)
+    btn_language.place(x=520, y=130)
         #Bind the tooltip with button
     ToolTip(btn_language, msg="Click here to apply your selected file language")
 
-    btn_summary = customtkinter.CTkButton(window, text=" Summary", fg_color=("#3d405b","#3d405b"), bg_color=("#00072d","#00072d"), command=MainApplication.summarize, corner_radius=10)
-    btn_summary.place(x=410, y=330)
+    percentOptions = ["10", "15", "25", "40", "50", "60", "70", "80", "90"]
+    percent = customtkinter.StringVar(value=percentOptions[4])
+    percent_options = customtkinter.CTkComboBox(master= window, variable=percent, values=percentOptions, button_hover_color=("#3f37c9","#3f37c9"), dropdown_hover_color=("#3f37c9","#3f37c9"), fg_color=("#3d405b","#3d405b"), bg_color=("#00072d","#00072d") )
+    percent_options.place(x=340, y=170)
 
+
+    btn_percent = customtkinter.CTkButton(master= window, text="✔️", width=30,
+                                 fg_color=("#3d405b","#3d405b"), bg_color=("#00072d","#00072d"), command=MainApplication.select_percentage, corner_radius=10)
+    btn_percent.place(x=520, y=170)
+        #Bind the tooltip with button
+    ToolTip(btn_percent, msg="Click here to apply your selected summary percentage")
+
+    btn_summary = customtkinter.CTkButton(window, text=" Summary", fg_color=("#3d405b","#3d405b"), bg_color=("#00072d","#00072d"), command=MainApplication.summarize, corner_radius=10)
+    btn_summary.place(x=410, y=210)
     ToolTip(btn_summary, msg="Click here to Start summarizing your file")
 
     # Button for saving the summary
     btn_savefile = customtkinter.CTkButton(window, text = '   Save     ',fg_color=("#3d405b","#3d405b"), bg_color=("#00072d","#00072d"), command = lambda : MainApplication.save(), corner_radius=10)
-    btn_savefile.place(x=410, y=370)
+    btn_savefile.place(x=410, y=250)
     ToolTip(btn_savefile, msg="Click here to save the summary that you created")
 
     #Button to clear all variables:
     btn_clearVariables = customtkinter.CTkButton(window, text = '   Clear     ',fg_color=("#3d405b","#3d405b"), bg_color=("#00072d","#00072d"), command = MainApplication.clearAfterOneRun, corner_radius=10)
-    btn_clearVariables.place(x=410, y=410)
+    btn_clearVariables.place(x=410, y=290)
     ToolTip(btn_clearVariables, msg="Click here to clear all variables and start over")
 
     # Button for closing
     exit_button = customtkinter.CTkButton(window, text="    Exit    ",fg_color=("#3d405b","#3d405b"), bg_color=("#00072d","#00072d"), command=MainApplication.close_app, corner_radius=10)
-    exit_button.place(x=410, y=525)
-    # exit_button.place(relx=0.5, rely=0.5, anchor=CENTER)
+    exit_button.place(x=410, y=365)
     ToolTip(btn_savefile, msg="Click here to exit the app")
 
     window.title('Summarizer, Pdf/word to Text App')
-    window.geometry("800x600+10+20")
+    window.geometry("700x500+10+20")
     #Adding the image to window
     imgPath = "./icons\Bg4.png"
     bgImg = ImageTk.PhotoImage(Image.open(imgPath))
     #The Label widget is a standard Tkinter widget used to display a text or image on the screen.
     bgImagePanel = Label(window, image = bgImg,bg="#00072d")
-    #The Pack geometry manager packs widgets in rows or columns.
-    # bgImagePanel.pack(side = "bottom", fill = "both", expand = "yes")
-    bgImagePanel.place(x=60,y=190)
+    bgImagePanel.place(x=60,y=90)
         # Created by
     account_bitmap = PhotoImage(file = "./icons\exclamation.png") 
     account_bitmap = account_bitmap.subsample(5, 5)
     lbl_exclamation = Label(window , image= account_bitmap, compound= TOP,bg="#00072d")
-    lbl_exclamation.place(x=40, y=510)
+    lbl_exclamation.place(x=40, y=350)
 
     lbl_developed=Label(window, text="This app has been developed by ", fg='#ff006e', bg="#00072d",  font=("Comic Sans MS", 9, "italic"))
-    lbl_developed.place(x=80, y=500)
+    lbl_developed.place(x=80, y=340)
     lbl_name=Label(window, text=" amir2628 ", fg='#fcbf49', bg="#00072d", font=("Comic Sans MS", 12, "italic"))
-    lbl_name.place(x=80, y=525)
+    lbl_name.place(x=80, y=365)
 
     # My Github profile
 
     btn_github = customtkinter.CTkButton(window, text = 'My GitHub',fg_color=("#3d405b","#3d405b"), bg_color=("#00072d","#00072d"), command = MainApplication.openGithub, corner_radius=10)
-    btn_github.place(x=200, y=525)
+    btn_github.place(x=200, y=365)
     ToolTip(btn_github, msg="Click here to Check my GitHub profile")
 
     window.protocol("WM_DELETE_WINDOW", MainApplication.on_closing)
